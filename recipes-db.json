@@ -3,112 +3,444 @@
     "name": "Classic Buttermilk Pancakes",
     "type": "Breakfast",
     "description": "Fluffy diner-style pancakes from scratch.",
-    "ingredients": ["2 cups all-purpose flour", "2 tbsp sugar", "2 tsp baking powder", "1 tsp baking soda", "1/2 tsp salt", "2 cups buttermilk", "2 large eggs", "3 tbsp melted butter"],
-    "steps": ["Whisk the dry ingredients together in a large bowl.", "Whisk buttermilk, eggs, and melted butter in another bowl.", "Fold wet into dry until just combined — lumps are fine.", "Cook 1/4-cup scoops on a buttered griddle over medium heat.", "Flip when bubbles pop on the surface, about 2 minutes per side."]
+    "ingredients": [
+      "2 cups all-purpose flour",
+      "2 tbsp sugar",
+      "2 tsp baking powder",
+      "1 tsp baking soda",
+      "1/2 tsp salt",
+      "2 cups buttermilk",
+      "2 large eggs",
+      "3 tbsp melted butter"
+    ],
+    "steps": [
+      "Whisk the dry ingredients together in a large bowl.",
+      "Whisk buttermilk, eggs, and melted butter in another bowl.",
+      "Fold wet into dry until just combined — lumps are fine.",
+      "Cook 1/4-cup scoops on a buttered griddle over medium heat.",
+      "Flip when bubbles pop on the surface, about 2 minutes per side."
+    ]
   },
   {
     "name": "Veggie Omelette",
     "type": "Breakfast",
     "description": "A quick three-egg omelette loaded with vegetables.",
-    "ingredients": ["3 large eggs", "1 tbsp butter", "1/4 cup diced bell pepper", "1/4 cup diced onion", "1/4 cup mushrooms, sliced", "1/4 cup shredded cheese", "Salt and pepper to taste"],
-    "steps": ["Sauté the pepper, onion, and mushrooms in half the butter until soft.", "Beat the eggs with salt and pepper.", "Melt remaining butter, pour in eggs, and cook undisturbed 1 minute.", "Add veggies and cheese to one half, fold, and cook 1 more minute."]
+    "ingredients": [
+      "3 large eggs",
+      "1 tbsp butter",
+      "1/4 cup diced bell pepper",
+      "1/4 cup diced onion",
+      "1/4 cup mushrooms, sliced",
+      "1/4 cup shredded cheese",
+      "Salt and pepper to taste"
+    ],
+    "steps": [
+      "Sauté the pepper, onion, and mushrooms in half the butter until soft.",
+      "Beat the eggs with salt and pepper.",
+      "Melt remaining butter, pour in eggs, and cook undisturbed 1 minute.",
+      "Add veggies and cheese to one half, fold, and cook 1 more minute."
+    ]
   },
   {
     "name": "Overnight Oats",
     "type": "Breakfast",
     "description": "No-cook oats that are ready when you wake up.",
-    "ingredients": ["1/2 cup rolled oats", "1/2 cup milk of choice", "1/4 cup yogurt", "1 tbsp chia seeds", "1 tbsp honey or maple syrup", "Fruit for topping"],
-    "steps": ["Stir everything except the fruit together in a jar.", "Cover and refrigerate overnight or at least 4 hours.", "Top with fruit and serve cold."]
+    "ingredients": [
+      "1/2 cup rolled oats",
+      "1/2 cup milk of choice",
+      "1/4 cup yogurt",
+      "1 tbsp chia seeds",
+      "1 tbsp honey or maple syrup",
+      "Fruit for topping"
+    ],
+    "steps": [
+      "Stir everything except the fruit together in a jar.",
+      "Cover and refrigerate overnight or at least 4 hours.",
+      "Top with fruit and serve cold."
+    ]
   },
   {
     "name": "French Toast",
     "type": "Breakfast",
     "description": "Golden custardy French toast with cinnamon.",
-    "ingredients": ["4 thick slices bread", "2 large eggs", "1/2 cup milk", "1 tsp vanilla extract", "1/2 tsp cinnamon", "2 tbsp butter", "Maple syrup to serve"],
-    "steps": ["Whisk eggs, milk, vanilla, and cinnamon in a shallow dish.", "Soak each bread slice 20 seconds per side.", "Cook in butter over medium heat until golden, 2-3 minutes per side.", "Serve with maple syrup."]
+    "ingredients": [
+      "4 thick slices bread",
+      "2 large eggs",
+      "1/2 cup milk",
+      "1 tsp vanilla extract",
+      "1/2 tsp cinnamon",
+      "2 tbsp butter",
+      "Maple syrup to serve"
+    ],
+    "steps": [
+      "Whisk eggs, milk, vanilla, and cinnamon in a shallow dish.",
+      "Soak each bread slice 20 seconds per side.",
+      "Cook in butter over medium heat until golden, 2-3 minutes per side.",
+      "Serve with maple syrup."
+    ]
   },
   {
     "name": "Chicken Caesar Wrap",
     "type": "Lunch",
     "description": "A crunchy handheld take on the classic salad.",
-    "ingredients": ["2 large flour tortillas", "2 cups cooked chicken, sliced", "2 cups romaine lettuce, chopped", "1/4 cup Caesar dressing", "1/4 cup grated parmesan", "Croutons, lightly crushed"],
-    "steps": ["Toss the lettuce, chicken, dressing, parmesan, and croutons together.", "Pile the mixture down the center of each tortilla.", "Fold in the sides and roll tightly.", "Slice in half and serve."]
+    "ingredients": [
+      "2 large flour tortillas",
+      "2 cups cooked chicken, sliced",
+      "2 cups romaine lettuce, chopped",
+      "1/4 cup Caesar dressing",
+      "1/4 cup grated parmesan",
+      "Croutons, lightly crushed"
+    ],
+    "steps": [
+      "Toss the lettuce, chicken, dressing, parmesan, and croutons together.",
+      "Pile the mixture down the center of each tortilla.",
+      "Fold in the sides and roll tightly.",
+      "Slice in half and serve."
+    ]
   },
   {
     "name": "Tomato Basil Soup",
     "type": "Lunch",
     "description": "Silky tomato soup that pairs perfectly with grilled cheese.",
-    "ingredients": ["2 tbsp olive oil", "1 onion, chopped", "3 cloves garlic, minced", "2 cans (28 oz) whole tomatoes", "2 cups vegetable broth", "1/2 cup fresh basil", "1/4 cup heavy cream", "Salt and pepper"],
-    "steps": ["Soften the onion in olive oil, then add garlic for 1 minute.", "Add tomatoes and broth; simmer 20 minutes.", "Blend until smooth with the basil.", "Stir in cream, season, and serve hot."]
+    "ingredients": [
+      "2 tbsp olive oil",
+      "1 onion, chopped",
+      "3 cloves garlic, minced",
+      "2 cans (28 oz) whole tomatoes",
+      "2 cups vegetable broth",
+      "1/2 cup fresh basil",
+      "1/4 cup heavy cream",
+      "Salt and pepper"
+    ],
+    "steps": [
+      "Soften the onion in olive oil, then add garlic for 1 minute.",
+      "Add tomatoes and broth; simmer 20 minutes.",
+      "Blend until smooth with the basil.",
+      "Stir in cream, season, and serve hot."
+    ]
   },
   {
     "name": "Grilled Cheese Sandwich",
     "type": "Lunch",
     "description": "Crispy outside, melty inside — the reliable classic.",
-    "ingredients": ["2 slices sourdough bread", "2 slices cheddar cheese", "1 slice American cheese", "2 tbsp butter, softened"],
-    "steps": ["Butter one side of each bread slice.", "Layer the cheeses between the slices, buttered sides out.", "Cook in a skillet over medium-low heat until deep golden, about 3-4 minutes per side.", "Rest 1 minute before slicing."]
+    "ingredients": [
+      "2 slices sourdough bread",
+      "2 slices cheddar cheese",
+      "1 slice American cheese",
+      "2 tbsp butter, softened"
+    ],
+    "steps": [
+      "Butter one side of each bread slice.",
+      "Layer the cheeses between the slices, buttered sides out.",
+      "Cook in a skillet over medium-low heat until deep golden, about 3-4 minutes per side.",
+      "Rest 1 minute before slicing."
+    ]
   },
   {
     "name": "Chicken Quesadillas",
     "type": "Lunch",
     "description": "Crispy tortillas packed with chicken and melted cheese.",
-    "ingredients": ["2 large flour tortillas", "1 cup cooked chicken, shredded", "1 cup shredded Monterey Jack", "1/4 cup salsa", "1 tbsp oil", "Sour cream to serve"],
-    "steps": ["Spread chicken, cheese, and salsa over half of each tortilla.", "Fold tortillas over the filling.", "Cook in oil over medium heat until crisp, about 3 minutes per side.", "Cut into wedges and serve with sour cream."]
+    "ingredients": [
+      "2 large flour tortillas",
+      "1 cup cooked chicken, shredded",
+      "1 cup shredded Monterey Jack",
+      "1/4 cup salsa",
+      "1 tbsp oil",
+      "Sour cream to serve"
+    ],
+    "steps": [
+      "Spread chicken, cheese, and salsa over half of each tortilla.",
+      "Fold tortillas over the filling.",
+      "Cook in oil over medium heat until crisp, about 3 minutes per side.",
+      "Cut into wedges and serve with sour cream."
+    ]
   },
   {
     "name": "Chicken Parmesan",
     "type": "Dinner",
     "description": "Breaded chicken cutlets baked with marinara and mozzarella.",
-    "ingredients": ["2 chicken breasts, halved horizontally", "1 cup breadcrumbs", "1/2 cup grated parmesan", "2 eggs, beaten", "1/2 cup flour", "2 cups marinara sauce", "1 cup shredded mozzarella", "Oil for frying"],
-    "steps": ["Dredge cutlets in flour, then egg, then a breadcrumb-parmesan mix.", "Pan-fry in oil until golden, about 3 minutes per side.", "Top each cutlet with marinara and mozzarella in a baking dish.", "Bake at 425°F (220°C) until the cheese melts and bubbles, about 10 minutes.", "Serve over spaghetti or with a green salad."]
+    "ingredients": [
+      "2 chicken breasts, halved horizontally",
+      "1 cup breadcrumbs",
+      "1/2 cup grated parmesan",
+      "2 eggs, beaten",
+      "1/2 cup flour",
+      "2 cups marinara sauce",
+      "1 cup shredded mozzarella",
+      "Oil for frying"
+    ],
+    "steps": [
+      "Dredge cutlets in flour, then egg, then a breadcrumb-parmesan mix.",
+      "Pan-fry in oil until golden, about 3 minutes per side.",
+      "Top each cutlet with marinara and mozzarella in a baking dish.",
+      "Bake at 425°F (220°C) until the cheese melts and bubbles, about 10 minutes.",
+      "Serve over spaghetti or with a green salad."
+    ]
   },
   {
     "name": "Spaghetti Bolognese",
     "type": "Dinner",
     "description": "A rich, slow-simmered meat sauce over pasta.",
-    "ingredients": ["1 lb ground beef", "1 onion, diced", "2 carrots, finely diced", "3 cloves garlic, minced", "1 can (28 oz) crushed tomatoes", "2 tbsp tomato paste", "1/2 cup milk", "1 lb spaghetti", "Olive oil, salt, pepper"],
-    "steps": ["Brown the beef in olive oil, then remove.", "Soften onion and carrots; add garlic and tomato paste for 1 minute.", "Return beef with crushed tomatoes; simmer 30-45 minutes.", "Stir in the milk near the end and season.", "Toss with cooked spaghetti and serve."]
+    "ingredients": [
+      "1 lb ground beef",
+      "1 onion, diced",
+      "2 carrots, finely diced",
+      "3 cloves garlic, minced",
+      "1 can (28 oz) crushed tomatoes",
+      "2 tbsp tomato paste",
+      "1/2 cup milk",
+      "1 lb spaghetti",
+      "Olive oil, salt, pepper"
+    ],
+    "steps": [
+      "Brown the beef in olive oil, then remove.",
+      "Soften onion and carrots; add garlic and tomato paste for 1 minute.",
+      "Return beef with crushed tomatoes; simmer 30-45 minutes.",
+      "Stir in the milk near the end and season.",
+      "Toss with cooked spaghetti and serve."
+    ]
   },
   {
     "name": "Sheet Pan Salmon and Vegetables",
     "type": "Dinner",
     "description": "One-pan salmon with roasted broccoli and potatoes.",
-    "ingredients": ["4 salmon fillets", "1 lb baby potatoes, halved", "1 head broccoli, cut into florets", "3 tbsp olive oil", "1 lemon", "2 cloves garlic, minced", "Salt and pepper"],
-    "steps": ["Roast the potatoes with oil, salt, and pepper at 425°F (220°C) for 15 minutes.", "Add broccoli and push everything to the sides.", "Place salmon in the center; season with garlic, lemon, salt, and pepper.", "Roast 12-15 more minutes until the salmon flakes easily."]
+    "ingredients": [
+      "4 salmon fillets",
+      "1 lb baby potatoes, halved",
+      "1 head broccoli, cut into florets",
+      "3 tbsp olive oil",
+      "1 lemon",
+      "2 cloves garlic, minced",
+      "Salt and pepper"
+    ],
+    "steps": [
+      "Roast the potatoes with oil, salt, and pepper at 425°F (220°C) for 15 minutes.",
+      "Add broccoli and push everything to the sides.",
+      "Place salmon in the center; season with garlic, lemon, salt, and pepper.",
+      "Roast 12-15 more minutes until the salmon flakes easily."
+    ]
   },
   {
     "name": "Beef Tacos",
     "type": "Dinner",
     "description": "Weeknight tacos with seasoned ground beef.",
-    "ingredients": ["1 lb ground beef", "1 tbsp chili powder", "1 tsp cumin", "1/2 tsp garlic powder", "8 taco shells", "Shredded lettuce", "Diced tomato", "Shredded cheese", "Sour cream"],
-    "steps": ["Brown the beef and drain any excess fat.", "Stir in the spices with a splash of water; simmer 5 minutes.", "Warm the taco shells in the oven.", "Fill shells with beef and pile on the toppings."]
+    "ingredients": [
+      "1 lb ground beef",
+      "1 tbsp chili powder",
+      "1 tsp cumin",
+      "1/2 tsp garlic powder",
+      "8 taco shells",
+      "Shredded lettuce",
+      "Diced tomato",
+      "Shredded cheese",
+      "Sour cream"
+    ],
+    "steps": [
+      "Brown the beef and drain any excess fat.",
+      "Stir in the spices with a splash of water; simmer 5 minutes.",
+      "Warm the taco shells in the oven.",
+      "Fill shells with beef and pile on the toppings."
+    ]
   },
   {
     "name": "Vegetable Stir-Fry",
     "type": "Dinner",
     "description": "Crisp vegetables in a glossy garlic-ginger sauce.",
-    "ingredients": ["2 tbsp vegetable oil", "1 bell pepper, sliced", "2 cups broccoli florets", "1 carrot, sliced thin", "2 cloves garlic, minced", "1 tbsp grated ginger", "3 tbsp soy sauce", "1 tbsp honey", "1 tsp cornstarch", "Cooked rice to serve"],
-    "steps": ["Stir-fry the vegetables in hot oil until crisp-tender, about 4 minutes.", "Add garlic and ginger for 30 seconds.", "Whisk soy sauce, honey, and cornstarch with 2 tbsp water; pour in.", "Toss until the sauce thickens and coats everything; serve over rice."]
+    "ingredients": [
+      "2 tbsp vegetable oil",
+      "1 bell pepper, sliced",
+      "2 cups broccoli florets",
+      "1 carrot, sliced thin",
+      "2 cloves garlic, minced",
+      "1 tbsp grated ginger",
+      "3 tbsp soy sauce",
+      "1 tbsp honey",
+      "1 tsp cornstarch",
+      "Cooked rice to serve"
+    ],
+    "steps": [
+      "Stir-fry the vegetables in hot oil until crisp-tender, about 4 minutes.",
+      "Add garlic and ginger for 30 seconds.",
+      "Whisk soy sauce, honey, and cornstarch with 2 tbsp water; pour in.",
+      "Toss until the sauce thickens and coats everything; serve over rice."
+    ]
   },
   {
     "name": "Homemade Margherita Pizza",
     "type": "Dinner",
     "description": "Simple pizza with tomato, mozzarella, and fresh basil.",
-    "ingredients": ["1 lb pizza dough", "1/2 cup crushed tomatoes", "8 oz fresh mozzarella, torn", "Fresh basil leaves", "2 tbsp olive oil", "Salt"],
-    "steps": ["Heat the oven to its highest setting with a pizza stone or inverted sheet pan inside.", "Stretch the dough to a 12-inch round.", "Top with crushed tomatoes, a pinch of salt, and the mozzarella.", "Bake 8-12 minutes until blistered and bubbling.", "Finish with basil and a drizzle of olive oil."]
+    "ingredients": [
+      "1 lb pizza dough",
+      "1/2 cup crushed tomatoes",
+      "8 oz fresh mozzarella, torn",
+      "Fresh basil leaves",
+      "2 tbsp olive oil",
+      "Salt"
+    ],
+    "steps": [
+      "Heat the oven to its highest setting with a pizza stone or inverted sheet pan inside.",
+      "Stretch the dough to a 12-inch round.",
+      "Top with crushed tomatoes, a pinch of salt, and the mozzarella.",
+      "Bake 8-12 minutes until blistered and bubbling.",
+      "Finish with basil and a drizzle of olive oil."
+    ]
   },
   {
     "name": "Banana Smoothie",
     "type": "",
     "description": "A creamy anytime smoothie with three ingredients.",
-    "ingredients": ["2 ripe bananas", "1 cup milk of choice", "1/2 cup yogurt", "1 tbsp honey", "4 ice cubes"],
-    "steps": ["Add everything to a blender.", "Blend until completely smooth, about 45 seconds.", "Pour and serve immediately."]
+    "ingredients": [
+      "2 ripe bananas",
+      "1 cup milk of choice",
+      "1/2 cup yogurt",
+      "1 tbsp honey",
+      "4 ice cubes"
+    ],
+    "steps": [
+      "Add everything to a blender.",
+      "Blend until completely smooth, about 45 seconds.",
+      "Pour and serve immediately."
+    ]
   },
   {
     "name": "Garlic Butter Rice",
     "type": "",
     "description": "A fragrant side dish that goes with everything.",
-    "ingredients": ["1 cup long-grain rice", "2 cups chicken broth", "3 tbsp butter", "4 cloves garlic, minced", "2 tbsp chopped parsley", "Salt"],
-    "steps": ["Toast the garlic in butter over medium heat until fragrant.", "Stir in the rice to coat, then add broth and a pinch of salt.", "Cover and simmer on low 18 minutes.", "Rest 5 minutes, fluff, and fold in the parsley."]
+    "ingredients": [
+      "1 cup long-grain rice",
+      "2 cups chicken broth",
+      "3 tbsp butter",
+      "4 cloves garlic, minced",
+      "2 tbsp chopped parsley",
+      "Salt"
+    ],
+    "steps": [
+      "Toast the garlic in butter over medium heat until fragrant.",
+      "Stir in the rice to coat, then add broth and a pinch of salt.",
+      "Cover and simmer on low 18 minutes.",
+      "Rest 5 minutes, fluff, and fold in the parsley."
+    ]
+  },
+  {
+    "name": "Trail Mix Energy Bites",
+    "type": "Snack",
+    "description": "No-bake bites for a quick energy boost.",
+    "ingredients": [
+      "1 cup rolled oats",
+      "1/2 cup peanut butter",
+      "1/3 cup honey",
+      "1/4 cup mini chocolate chips",
+      "1/4 cup chopped nuts",
+      "1 tbsp chia seeds"
+    ],
+    "steps": [
+      "Stir everything together in a bowl until combined.",
+      "Chill the mixture 30 minutes so it firms up.",
+      "Roll into 1-inch balls.",
+      "Store in the fridge up to a week."
+    ]
+  },
+  {
+    "name": "Crispy Roasted Chickpeas",
+    "type": "Snack",
+    "description": "A crunchy, salty snack that beats chips.",
+    "ingredients": [
+      "1 can (15 oz) chickpeas, drained",
+      "1 tbsp olive oil",
+      "1/2 tsp smoked paprika",
+      "1/2 tsp garlic powder",
+      "1/4 tsp salt"
+    ],
+    "steps": [
+      "Pat the chickpeas completely dry.",
+      "Toss with oil and the seasonings.",
+      "Roast at 400°F (200°C) for 25-30 minutes, shaking the pan halfway.",
+      "Cool 5 minutes to crisp up before eating."
+    ]
+  },
+  {
+    "name": "Guacamole with Chips",
+    "type": "Snack",
+    "description": "Fresh guacamole ready in ten minutes.",
+    "ingredients": [
+      "3 ripe avocados",
+      "1 lime, juiced",
+      "1/4 cup diced red onion",
+      "1 roma tomato, diced",
+      "2 tbsp chopped cilantro",
+      "1/2 tsp salt",
+      "Tortilla chips to serve"
+    ],
+    "steps": [
+      "Mash the avocados with lime juice and salt.",
+      "Fold in the onion, tomato, and cilantro.",
+      "Taste and adjust the lime and salt.",
+      "Serve immediately with tortilla chips."
+    ]
+  },
+  {
+    "name": "Chocolate Chip Cookies",
+    "type": "Dessert",
+    "description": "Chewy centers, crisp edges, classic flavor.",
+    "ingredients": [
+      "2 1/4 cups all-purpose flour",
+      "1 tsp baking soda",
+      "1 cup butter, softened",
+      "3/4 cup brown sugar",
+      "1/2 cup white sugar",
+      "2 large eggs",
+      "2 tsp vanilla extract",
+      "2 cups chocolate chips",
+      "1/2 tsp salt"
+    ],
+    "steps": [
+      "Cream the butter with both sugars until fluffy.",
+      "Beat in the eggs and vanilla.",
+      "Stir in flour, baking soda, and salt, then fold in the chips.",
+      "Scoop onto lined baking sheets.",
+      "Bake at 375°F (190°C) for 9-11 minutes until golden at the edges."
+    ]
+  },
+  {
+    "name": "Berry Fruit Crumble",
+    "type": "Dessert",
+    "description": "Warm berries under a buttery oat topping.",
+    "ingredients": [
+      "4 cups mixed berries",
+      "3 tbsp sugar",
+      "1 tbsp cornstarch",
+      "1 cup rolled oats",
+      "1/2 cup flour",
+      "1/2 cup brown sugar",
+      "1/2 cup cold butter, cubed",
+      "Vanilla ice cream to serve"
+    ],
+    "steps": [
+      "Toss the berries with sugar and cornstarch in a baking dish.",
+      "Rub the oats, flour, brown sugar, and butter together into clumps.",
+      "Scatter the topping over the berries.",
+      "Bake at 375°F (190°C) for 35-40 minutes until bubbling.",
+      "Serve warm with ice cream."
+    ]
+  },
+  {
+    "name": "Mug Brownie",
+    "type": "Dessert",
+    "description": "A single-serving brownie in under five minutes.",
+    "ingredients": [
+      "4 tbsp flour",
+      "4 tbsp sugar",
+      "2 tbsp cocoa powder",
+      "Pinch of salt",
+      "3 tbsp milk",
+      "2 tbsp vegetable oil",
+      "Drop of vanilla extract"
+    ],
+    "steps": [
+      "Stir the dry ingredients together in a large mug.",
+      "Mix in the milk, oil, and vanilla until smooth.",
+      "Microwave 60-90 seconds until just set in the middle.",
+      "Cool 1 minute before digging in."
+    ]
   }
 ]

@@ -15,6 +15,9 @@
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
   .card-hover { transition: transform .15s ease, box-shadow .15s ease; }
   .card-hover:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,.22); }
+  .tab-scroll { scrollbar-width: thin; }
+  .tab-scroll::-webkit-scrollbar { height: 5px; }
+  .tab-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,.22); border-radius: 999px; }
 </style>
 </head>
 <body>
@@ -30,7 +33,7 @@ const { useState, useEffect, useRef, createContext, useContext } = React;
 /*  free, no-account recipe API). No AI usage anywhere.                */
 /* ------------------------------------------------------------------ */
 
-const MEALS = ["Breakfast", "Lunch", "Dinner"];
+const MEALS = ["Breakfast", "Lunch", "Dinner", "Snack", "Dessert"];
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
 /* ---------- localStorage persistence ---------- */
@@ -104,13 +107,13 @@ function mix(hexA, hexB, t) {
 const LIGHT = {
   bg: "#EEF1EA", ink: "#26382B", inkSoft: "#5A6B5D", card: "#FFFDF8",
   line: "#D8DDD2", accent: "#C4452C", star: "#E9B44C", starEdge: "#B8860B",
-  tabColors: { Breakfast: "#E9B44C", Lunch: "#7E9271", Dinner: "#C4452C" },
+  tabColors: { Breakfast: "#E9B44C", Lunch: "#7E9271", Dinner: "#C4452C", Snack: "#5E86A8", Dessert: "#A2648F" },
   onAccent: "#FFFFFF", overlayTint: null, bgImage: null,
 };
 const DARK = {
   bg: "#1C221D", ink: "#F1EFE5", inkSoft: "#A7B2A5", card: "#2A332B",
   line: "#3E483F", accent: "#E06248", star: "#E9B44C", starEdge: "#E9B44C",
-  tabColors: { Breakfast: "#E9B44C", Lunch: "#8FA382", Dinner: "#E06248" },
+  tabColors: { Breakfast: "#E9B44C", Lunch: "#8FA382", Dinner: "#E06248", Snack: "#7FA3C4", Dessert: "#C08AB0" },
   onAccent: "#FFFFFF", overlayTint: null, bgImage: null,
 };
 function buildCustomTheme(base, accent, bgImage) {
@@ -124,7 +127,13 @@ function buildCustomTheme(base, accent, bgImage) {
     card,
     line: mix(base, ink, 0.22),
     accent, star: accent, starEdge: mix(accent, ink, 0.35),
-    tabColors: { Breakfast: mix(accent, base, 0.25), Lunch: mix(accent, base, 0.45), Dinner: accent },
+    tabColors: {
+      Breakfast: mix(accent, base, 0.25),
+      Lunch: mix(accent, base, 0.4),
+      Dinner: accent,
+      Snack: mix(accent, base, 0.55),
+      Dessert: mix(accent, ink, 0.25),
+    },
     onAccent: accentIsLight ? "#1A1A1A" : "#FFFFFF",
     overlayTint: bgImage ? (darkBase ? "rgba(0,0,0,.45)" : "rgba(255,255,255,.55)") : null,
     bgImage: bgImage || null,
@@ -203,7 +212,7 @@ function mealDbToRecipe(meal) {
     .map((s) => s.replace(/^STEP \d+[:.]?\s*/i, "").replace(/^\d+[.)]\s*/, "").trim())
     .filter((s) => s.length > 3);
   const cat = (meal.strCategory || "").toLowerCase();
-  const type = cat === "breakfast" ? "Breakfast" : "";
+  const type = cat === "breakfast" ? "Breakfast" : cat === "dessert" ? "Dessert" : "";
   const descBits = [meal.strArea, meal.strCategory].filter(Boolean);
   return {
     name: meal.strMeal,
@@ -537,7 +546,14 @@ function RecipeList({ title, recipes, tab, setTab, onOpen, onStar, onAdd, goHome
       </header>
 
       {showTabs && (
-        <nav style={{ display: "flex", gap: 8, padding: "14px 20px 0", maxWidth: 980, margin: "0 auto" }} aria-label="Meal type">
+        <nav
+          className="tab-scroll"
+          style={{
+            display: "flex", gap: 8, padding: "14px 20px 2px", maxWidth: 980, margin: "0 auto",
+            overflowX: "auto", WebkitOverflowScrolling: "touch",
+          }}
+          aria-label="Meal type"
+        >
           {MEALS.map((m) => {
             const active = tab === m;
             return (
@@ -545,12 +561,13 @@ function RecipeList({ title, recipes, tab, setTab, onOpen, onStar, onAdd, goHome
                 key={m}
                 onClick={() => setTab(m)}
                 style={{
-                  flex: 1, padding: "10px 0 9px", borderRadius: "10px 10px 0 0",
+                  flex: "1 0 auto", minWidth: 112, padding: "10px 18px 9px", borderRadius: "10px 10px 0 0",
                   border: "1.5px solid " + (active ? T.ink : T.line),
                   borderBottom: active ? "3px solid " + T.tabColors[m] : "1.5px solid " + T.line,
                   background: active ? T.card : "transparent",
                   color: active ? T.ink : T.inkSoft,
                   fontWeight: active ? 700 : 500, fontSize: 15, cursor: "pointer",
+                  whiteSpace: "nowrap",
                 }}
                 aria-pressed={active}
               >
