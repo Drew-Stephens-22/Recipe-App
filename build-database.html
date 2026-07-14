@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Recipe Storage — Database Builder</title>
+<style>
+  body {
+    font-family: 'Avenir Next', 'Segoe UI', system-ui, sans-serif;
+    background: #EEF1EA; color: #26382B;
+    max-width: 640px; margin: 0 auto; padding: 40px 20px 80px;
+    line-height: 1.6;
+  }
+  h1 { font-family: Georgia, serif; font-size: 32px; margin-bottom: 6px; }
+  .sub { color: #5A6B5D; margin-top: 0; }
+  button {
+    font: inherit; font-weight: 700; font-size: 16px;
+    padding: 14px 28px; border-radius: 999px; border: none;
+    background: #C4452C; color: #fff; cursor: pointer;
+  }
+  button:disabled { opacity: .55; cursor: wait; }
+  .bar { height: 8px; border-radius: 999px; background: #D8DDD2; overflow: hidden; margin: 18px 0 8px; }
+  .fill { height: 100%; width: 0%; background: #C4452C; transition: width .2s ease; }
+  .log { font-size: 14px; color: #5A6B5D; min-height: 22px; }
+  .done { background: #FFFDF8; border: 1.5px solid #D8DDD2; border-radius: 12px; padding: 16px 18px; margin-top: 18px; }
+  code { background: #FFFDF8; border: 1px solid #D8DDD2; border-radius: 5px; padding: 1px 6px; font-size: 14px; }
+  ol li { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<h1>Database Builder</h1>
+<p class="sub">Pulls every recipe from TheMealDB (free, no account) and combines it with your current
+<code>recipes-db.json</code> into one big file for your repo.</p>
+
+<p>Run this once (or whenever you want to refresh). It makes 26 small requests — one per letter of the
+alphabet — directly from your browser to TheMealDB, then hands you the finished file. Nothing is uploaded anywhere.</p>
+
+<button id="go">Build the full database</button>
+
+<div class="bar"><div class="fill" id="fill"></div></div>
+<div class="log" id="log"></div>
+
+<div class="done" id="done" style="display:none">
+  <strong id="summary"></strong>
+  <p>Your download of <code>recipes-db.json</code> has started. To put it live:</p>
+  <ol>
+    <li>In your GitHub repo, open the existing <code>recipes-db.json</code>.</li>
+    <li>Replace its contents with the downloaded file (or delete and re-upload).</li>
+    <li>Commit — GitHub Pages redeploys automatically, and every visitor gets the full collection.</li>
+  </ol>
+  <button id="again" style="background:#26382B">Download again</button>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+function mapType(cat) {
+  const c = (cat || "").toLowerCase();
+  if (c === "breakfast") return "Breakfast";
+  if (c === "dessert") return "Dessert";
+  if (c === "side" || c === "starter") return "Snack";
+  if (c === "pasta") return "Lunch";
+  return "Dinner"; // beef, chicken, seafood, pork, lamb, vegetarian, vegan, goat, misc.
+}
+
+function mealToRecipe(meal) {
+  const ingredients = [];
+  for (let i = 1; i <= 20; i++) {
+    const ing = meal["strIngredient" + i];
+    const measure = meal["strMeasure" + i];
+    if (ing && ing.trim()) ingredients.push(((measure || "").trim() + " " + ing.trim()).trim());
+  }
+  const steps = (meal.strInstructions || "")
+    .split(/\r?\n+/)
+    .map((s) => s.replace(/^STEP \d+[:.]?\s*/i, "").replace(/^\d+[.)]\s*/, "").trim())
+    .filter((s) => s.length > 3);
+  const descBits = [meal.strArea, meal.strCategory].filter(Boolean);
+  return {
+    name: (meal.strMeal || "").trim(),
+    type: mapType(meal.strCategory),
+    description: descBits.join(" \u00b7 "),
+    ingredients: ingredients,
+    steps: steps.length ? steps : [(meal.strInstructions || "").trim()].filter(Boolean),
+    image: meal.strMealThumb || null
+  };
+}
+
+let lastJson = null;
+
+async function build() {
+  $("go").disabled = true;
+  $("done").style.display = "none";
+  const letters = "abcdefghijklmnopqrstuvwxyz".split("");
+  const byName = new Map();
+
+  // 1. start from the existing database file if it's alongside this page
+  try {
+    const res = await fetch("recipes-db.json", { cache: "no-store" });
+    if (res.ok) {
+      const existing = await res.json();
+      for (const r of existing) if (r && r.name) byName.set(r.name.toLowerCase(), r);
+      $("log").textContent = "Loaded " + byName.size + " recipes from your current recipes-db.json";
+    }
+  } catch (e) {
+    $("log").textContent = "No local recipes-db.json found — building from TheMealDB only.";
+  }
+
+  // 2. fetch TheMealDB letter by letter
+  let fetched = 0, failed = 0;
+  for (let i = 0; i < letters.length; i++) {
+    const L = letters[i];
+    try {
+      const res = await fetch("https://www.themealdb.com/api/json/v1/1/search.php?f=" + L);
+      const data = await res.json();
+      const meals = data.meals || [];
+      for (const m of meals) {
+        const r = mealToRecipe(m);
+        if (r.name && r.ingredients.length && r.steps.length && !byName.has(r.name.toLowerCase())) {
+          byName.set(r.name.toLowerCase(), r);
+          fetched++;
+        }
+      }
+    } catch (e) {
+      failed++;
+    }
+    $("fill").style.width = Math.round(((i + 1) / letters.length) * 100) + "%";
+    $("log").textContent = "Letter \u201C" + L.toUpperCase() + "\u201D done \u2014 " + byName.size + " recipes so far\u2026";
+    await new Promise((r) => setTimeout(r, 150)); // be polite to the free API
+  }
+
+  const all = Array.from(byName.values()).sort((a, b) => a.name.localeCompare(b.name));
+  lastJson = JSON.stringify(all, null, 2);
+  download();
+
+  $("summary").textContent =
+    "Built " + all.length + " recipes (" + fetched + " new from TheMealDB" +
+    (failed ? ", " + failed + " letters failed \u2014 rerun to fill gaps" : "") + ").";
+  $("done").style.display = "block";
+  $("log").textContent = "Finished.";
+  $("go").disabled = false;
+}
+
+function download() {
+  if (!lastJson) return;
+  const blob = new Blob([lastJson], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "recipes-db.json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+$("go").addEventListener("click", build);
+$("again").addEventListener("click", download);
+</script>
+</body>
+</html>
