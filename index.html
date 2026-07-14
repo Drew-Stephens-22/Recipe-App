@@ -84,6 +84,17 @@ function loadSettings() {
 function saveSettings(s) {
   return store.set("app-settings", JSON.stringify(s));
 }
+/* favorites/hidden flags for the built-in recipes (the recipes themselves
+   live in recipes-db.json, so we only persist the user's choices about them) */
+function loadBuiltinMeta() {
+  try {
+    const v = store.get("builtin-meta");
+    return v ? JSON.parse(v) : { favs: [], hidden: [] };
+  } catch (e) { return { favs: [], hidden: [] }; }
+}
+function saveBuiltinMeta(meta) {
+  return store.set("builtin-meta", JSON.stringify(meta));
+}
 
 /* ---------- color math for themes ---------- */
 function hexToRgb(hex) {
@@ -236,6 +247,49 @@ async function searchMealDb(q) {
   }
 }
 
+/* ---------- photo-to-recipe: free in-browser OCR (Tesseract.js) ---------- */
+function loadTesseract() {
+  return new Promise((resolve, reject) => {
+    if (window.Tesseract) return resolve(window.Tesseract);
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+    s.onload = () => resolve(window.Tesseract);
+    s.onerror = () => reject(new Error("Couldn't load the text-recognition library. Check your connection."));
+    document.head.appendChild(s);
+  });
+}
+
+/* Split OCR text into a best-guess name / ingredients / steps.
+   Heuristics: section headers win; otherwise lines that start with or
+   contain quantities look like ingredients, prose looks like steps. */
+function parseRecipeText(raw) {
+  const lines = raw.split(/\r?\n/).map((s) => s.trim()).filter((s) => s.length > 1);
+  const unitRe = /(\d|½|¼|¾|⅓|⅔|⅛)\s*(cups?|tbsps?|tablespoons?|tsps?|teaspoons?|oz\b|ounces?|grams?|g\b|kg\b|ml\b|liters?|l\b|lbs?\b|pounds?|pinch(es)?|cloves?|cans?|sticks?|slices?|pieces?|large|medium|small)/i;
+  const qtyStart = /^[\d½¼¾⅓⅔⅛]/;
+  const headerOf = (line) => {
+    const low = line.toLowerCase().replace(/[^a-z]/g, "");
+    if (/^ingredients?$/.test(low)) return "ing";
+    if (/^(instructions?|directions?|method|steps?|preparation|howtomake)$/.test(low)) return "steps";
+    return null;
+  };
+
+  let name = "";
+  const ing = [], steps = [];
+  let section = null;
+
+  for (const line of lines) {
+    const h = headerOf(line);
+    if (h) { section = h; continue; }
+    if (!name && !section && line.length < 60 && !qtyStart.test(line)) { name = line; continue; }
+    if (section === "ing") { ing.push(line.replace(/^[-•*·]\s*/, "")); continue; }
+    if (section === "steps") { steps.push(line.replace(/^\d+[.)]\s*/, "")); continue; }
+    // no headers found — classify by shape
+    if (qtyStart.test(line) || unitRe.test(line)) ing.push(line.replace(/^[-•*·]\s*/, ""));
+    else steps.push(line.replace(/^\d+[.)]\s*/, ""));
+  }
+  return { name, ingredients: ing, steps };
+}
+
 /* ---------- tiny UI atoms ---------- */
 function Star({ filled, onClick, size = 22 }) {
   const T = useTheme();
@@ -317,6 +371,26 @@ function RecipeStorage() {
     setRecipes(loadRecipes());
     const s = loadSettings();
     if (s) setSettings((prev) => ({ ...prev, ...s }));
+
+    // Load the built-in collection so every visitor starts with recipes.
+    getLocalDb().then((db) => {
+      const meta = loadBuiltinMeta();
+      const builtins = db
+        .map((r, i) => ({
+          id: "builtin-" + i,
+          name: r.name,
+          type: MEALS.includes(r.type) ? r.type : "",
+          description: r.description || "",
+          ingredients: r.ingredients || [],
+          steps: r.steps || [],
+          image: r.image || null,
+          favorite: meta.favs.indexOf("builtin-" + i) !== -1,
+          builtin: true,
+          createdAt: 0, // built-ins sort after the user's own recipes
+        }))
+        .filter((r) => meta.hidden.indexOf(r.id) === -1);
+      setRecipes((prev) => [...prev.filter((r) => !r.builtin), ...builtins]);
+    });
   }, []);
 
   const T =
@@ -352,14 +426,33 @@ function RecipeStorage() {
       })
     );
     if (openRecipe && openRecipe.id === id) setOpenRecipe((o) => ({ ...o, favorite: !o.favorite }));
-    if (updated) saveRecipe(updated);
+    if (updated) {
+      if (updated.builtin) {
+        const meta = loadBuiltinMeta();
+        meta.favs = updated.favorite
+          ? Array.from(new Set([...meta.favs, id]))
+          : meta.favs.filter((f) => f !== id);
+        saveBuiltinMeta(meta);
+      } else {
+        saveRecipe(updated);
+      }
+    }
   };
 
   const deleteRecipe = (id) => {
     setRecipes((prev) => prev.filter((r) => r.id !== id));
     setOpenRecipe(null);
-    removeRecipe(id);
-    flash("Recipe deleted");
+    if (id.indexOf("builtin-") === 0) {
+      // built-ins live in recipes-db.json, so "deleting" hides it for this user
+      const meta = loadBuiltinMeta();
+      if (meta.hidden.indexOf(id) === -1) meta.hidden.push(id);
+      meta.favs = meta.favs.filter((f) => f !== id);
+      saveBuiltinMeta(meta);
+      flash("Built-in recipe hidden from your app");
+    } else {
+      removeRecipe(id);
+      flash("Recipe deleted");
+    }
   };
 
   const rootBackground = T.bgImage
@@ -517,9 +610,20 @@ function Home({ go, count, favCount }) {
 /* ---------- list pages (Recipes / Favorites) ---------- */
 function RecipeList({ title, recipes, tab, setTab, onOpen, onStar, onAdd, goHome, goFavorites, goRecipes, goSettings, showTabs }) {
   const T = useTheme();
-  const visible = showTabs
-    ? recipes.filter((r) => r.type === tab || !r.type) // unclassified recipes appear in every tab
-    : recipes;
+  const [searchQ, setSearchQ] = useState("");
+  const q = searchQ.trim().toLowerCase();
+
+  // While searching, look across ALL recipes on this page (every tab);
+  // otherwise show the current tab as usual.
+  const visible = q
+    ? recipes.filter((r) =>
+        (r.name + " " + (r.description || "") + " " + (r.ingredients || []).join(" "))
+          .toLowerCase()
+          .includes(q)
+      )
+    : showTabs
+      ? recipes.filter((r) => r.type === tab || !r.type) // unclassified recipes appear in every tab
+      : recipes;
 
   const topLinkStyle = {
     background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.3)",
@@ -545,7 +649,37 @@ function RecipeList({ title, recipes, tab, setTab, onOpen, onStar, onAdd, goHome
         </div>
       </header>
 
-      {showTabs && (
+      {/* in-app recipe search */}
+      <div style={{ maxWidth: 980, margin: "0 auto", padding: "14px 20px 0", display: "flex", gap: 8 }}>
+        <input
+          value={searchQ}
+          onChange={(e) => setSearchQ(e.target.value)}
+          placeholder={"Search " + (title === "Favorites" ? "your favorites" : "your recipes") + " — name or ingredient…"}
+          aria-label="Search recipes in the app"
+          style={{
+            flex: 1, boxSizing: "border-box", padding: "11px 14px", borderRadius: 999,
+            border: "1.5px solid " + T.line,
+            background: luminance(T.card) < 0.45 ? mix(T.card, "#000000", 0.15) : T.card,
+            fontSize: 15, color: T.ink, fontFamily: "inherit",
+          }}
+        />
+        {q && (
+          <button
+            onClick={() => setSearchQ("")}
+            aria-label="Clear search"
+            style={{ ...smallBtnStyle(T), borderRadius: 999, padding: "0 16px" }}
+          >
+            ✕ Clear
+          </button>
+        )}
+      </div>
+      {q && (
+        <p style={{ maxWidth: 980, margin: "8px auto 0", padding: "0 20px", fontSize: 13, color: T.inkSoft }}>
+          {visible.length} match{visible.length === 1 ? "" : "es"} across all {title === "Favorites" ? "favorites" : "tabs"}
+        </p>
+      )}
+
+      {showTabs && !q && (
         <nav
           className="tab-scroll"
           style={{
@@ -582,12 +716,16 @@ function RecipeList({ title, recipes, tab, setTab, onOpen, onStar, onAdd, goHome
         {visible.length === 0 ? (
           <div style={{ textAlign: "center", marginTop: 70, color: T.inkSoft }}>
             <p className="display" style={{ fontSize: 22, color: T.ink, marginBottom: 8 }}>
-              {title === "Favorites" ? "No favorites yet" : "No " + (showTabs ? tab.toLowerCase() + " " : "") + "recipes yet"}
+              {q
+                ? "No matches for \u201C" + searchQ.trim() + "\u201D"
+                : title === "Favorites" ? "No favorites yet" : "No " + (showTabs ? tab.toLowerCase() + " " : "") + "recipes yet"}
             </p>
             <p style={{ margin: 0 }}>
-              {title === "Favorites"
-                ? "Tap the star on any recipe to keep it here."
-                : "Use the + button to add your first recipe."}
+              {q
+                ? "Try a shorter word, or search by an ingredient."
+                : title === "Favorites"
+                  ? "Tap the star on any recipe to keep it here."
+                  : "Use the + button to add your first recipe."}
             </p>
           </div>
         ) : (
@@ -851,6 +989,45 @@ function RecipeForm({ onCancel, onSave }) {
   const [searchError, setSearchError] = useState("");
   const [searchNote, setSearchNote] = useState("");
 
+  // scan-a-photo (OCR) state
+  const scanFileRef = useRef(null);
+  const [scanning, setScanning] = useState(false);
+  const [scanProgress, setScanProgress] = useState(0);
+  const [scanError, setScanError] = useState("");
+
+  const handleScan = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    setScanning(true);
+    setScanProgress(0);
+    setScanError("");
+    try {
+      const Tess = await loadTesseract();
+      const { data } = await Tess.recognize(file, "eng", {
+        logger: (m) => {
+          if (m.status === "recognizing text") setScanProgress(Math.round(m.progress * 100));
+        },
+      });
+      const text = (data && data.text) ? data.text.trim() : "";
+      if (!text) {
+        setScanError("No readable text found in that image. Try a clearer, closer photo of the recipe text.");
+      } else {
+        const parsed = parseRecipeText(text);
+        setName(parsed.name || "");
+        setIngredients(parsed.ingredients.join("\n"));
+        setSteps(parsed.steps.join("\n"));
+        setImage(null);
+        setError("");
+        setPrefillNote("Text pulled from your photo — OCR isn't perfect, so double-check the fields, fix anything garbled, pick a type, then save.");
+        setFormTab("create");
+      }
+    } catch (err) {
+      setScanError(err && err.message ? err.message : "Couldn't read that image. Try another photo.");
+    }
+    setScanning(false);
+    if (scanFileRef.current) scanFileRef.current.value = "";
+  };
+
   const inputStyle = {
     width: "100%", boxSizing: "border-box", padding: "11px 13px", borderRadius: 10,
     border: "1.5px solid " + T.line, background: luminance(T.card) < 0.45 ? mix(T.card, "#000000", 0.2) : "#fff",
@@ -956,10 +1133,48 @@ function RecipeForm({ onCancel, onSave }) {
 
       <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
         {formTabBtn("create", "✎ Write my own")}
-        {formTabBtn("search", "🔍 Search recipes")}
+        {formTabBtn("search", "🔍 Search")}
+        {formTabBtn("scan", "📷 Scan a photo")}
       </div>
 
-      {formTab === "search" ? (
+      {formTab === "scan" ? (
+        <div>
+          <p style={{ fontSize: 14.5, lineHeight: 1.6, color: T.inkSoft, margin: "0 0 16px" }}>
+            Have a recipe as a picture — a screenshot from Instagram, a photo of a cookbook page or recipe card?
+            Upload it and the app will read the text right in your browser (nothing is uploaded to any server)
+            and fill out the recipe form for you to review.
+          </p>
+          <input ref={scanFileRef} type="file" accept="image/*" onChange={handleScan} style={{ display: "none" }} />
+          <button
+            onClick={() => scanFileRef.current && scanFileRef.current.click()}
+            disabled={scanning}
+            style={{
+              width: "100%", padding: "22px 16px", borderRadius: 12,
+              border: "2px dashed " + T.line, background: "transparent",
+              color: T.ink, fontSize: 15.5, fontWeight: 600,
+              cursor: scanning ? "wait" : "pointer",
+            }}
+          >
+            {scanning
+              ? (scanProgress > 0 ? "Reading text… " + scanProgress + "%" : "Preparing the reader…")
+              : "＋ Choose a recipe photo"}
+          </button>
+          {scanning && (
+            <div style={{ marginTop: 10, height: 6, borderRadius: 999, background: T.line, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: scanProgress + "%", background: T.accent, transition: "width .3s ease" }} />
+            </div>
+          )}
+          {scanError && <p style={{ color: T.accent, fontSize: 14, margin: "12px 0 0" }}>{scanError}</p>}
+          <p style={{ fontSize: 12.5, color: T.inkSoft, marginTop: 14 }}>
+            Works best on clear, printed text photographed straight-on. Handwriting and heavily stylized
+            fonts may come out garbled — you can fix anything in the form before saving. The first scan
+            downloads the free reader (a few MB), so it takes a moment; after that it's faster.
+          </p>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+            <button onClick={onCancel} style={{ ...smallBtnStyle(T), padding: "12px 22px" }}>Cancel</button>
+          </div>
+        </div>
+      ) : formTab === "search" ? (
         <div>
           <Field label="What are you looking for?" hint="A dish or ingredient — searches the built-in collection plus TheMealDB, a free online recipe database.">
             <div style={{ display: "flex", gap: 8 }}>
@@ -1126,7 +1341,7 @@ function RecipeDetail({ recipe, onClose, onStar, onDelete }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
         <div>
           <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: T.inkSoft }}>
-            {recipe.type || "Any meal"}
+            {(recipe.type || "Any meal") + (recipe.builtin ? " · Built-in" : "")}
           </div>
           <h3 className="display" style={{ margin: "4px 0 0", fontSize: 28, lineHeight: 1.15 }}>{recipe.name}</h3>
         </div>
@@ -1154,12 +1369,16 @@ function RecipeDetail({ recipe, onClose, onStar, onDelete }) {
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 26, gap: 10, flexWrap: "wrap" }}>
         {confirming ? (
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-            <span style={{ fontSize: 14, color: T.inkSoft }}>Delete this recipe?</span>
-            <button onClick={onDelete} style={{ ...smallBtnStyle(T), background: T.accent, color: T.onAccent, borderColor: T.accent }}>Yes, delete</button>
+            <span style={{ fontSize: 14, color: T.inkSoft }}>{recipe.builtin ? "Hide this built-in recipe?" : "Delete this recipe?"}</span>
+            <button onClick={onDelete} style={{ ...smallBtnStyle(T), background: T.accent, color: T.onAccent, borderColor: T.accent }}>
+              {recipe.builtin ? "Yes, hide it" : "Yes, delete"}
+            </button>
             <button onClick={() => setConfirming(false)} style={smallBtnStyle(T)}>Keep it</button>
           </div>
         ) : (
-          <button onClick={() => setConfirming(true)} style={{ ...smallBtnStyle(T), color: T.accent, borderColor: T.accent }}>Delete recipe</button>
+          <button onClick={() => setConfirming(true)} style={{ ...smallBtnStyle(T), color: T.accent, borderColor: T.accent }}>
+            {recipe.builtin ? "Hide recipe" : "Delete recipe"}
+          </button>
         )}
         <button onClick={onClose} style={{ ...smallBtnStyle(T), background: T.ink, color: T.bg, borderColor: T.ink, padding: "10px 24px" }}>Close</button>
       </div>
