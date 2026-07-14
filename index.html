@@ -403,6 +403,35 @@ function RecipeStorage() {
     setTimeout(() => setNotice(""), 2600);
   };
 
+  const importRecipes = (list) => {
+    const existing = new Set(recipes.map((r) => r.name.toLowerCase()));
+    const added = [];
+    let skipped = 0, invalid = 0, unsaved = 0;
+    for (const r of list) {
+      if (!r || !r.name || !Array.isArray(r.ingredients) || !Array.isArray(r.steps) || r.ingredients.length === 0 || r.steps.length === 0) {
+        invalid++;
+        continue;
+      }
+      if (existing.has(String(r.name).toLowerCase())) { skipped++; continue; }
+      const rec = {
+        id: uid(),
+        name: String(r.name),
+        type: MEALS.includes(r.type) ? r.type : "",
+        description: r.description ? String(r.description) : "",
+        ingredients: r.ingredients.map(String),
+        steps: r.steps.map(String),
+        image: typeof r.image === "string" ? r.image : null,
+        favorite: false,
+        createdAt: Date.now(),
+      };
+      existing.add(rec.name.toLowerCase());
+      if (!saveRecipe(rec)) unsaved++;
+      added.push(rec);
+    }
+    if (added.length) setRecipes((prev) => [...added, ...prev]);
+    return { added: added.length, skipped, invalid, unsaved };
+  };
+
   const updateSettings = (patch) => {
     const next = { ...settings, ...patch };
     setSettings(next);
@@ -509,7 +538,7 @@ function RecipeStorage() {
           )}
 
           {view === "settings" && (
-            <SettingsPage settings={settings} onChange={updateSettings} goHome={() => setView("home")} />
+            <SettingsPage settings={settings} onChange={updateSettings} goHome={() => setView("home")} recipes={recipes} onImport={importRecipes} />
           )}
 
           {showForm && <RecipeForm onCancel={() => setShowForm(false)} onSave={addRecipe} />}
@@ -815,13 +844,37 @@ function RecipeCard({ r, onOpen, onStar }) {
 }
 
 /* ---------- settings page ---------- */
-function SettingsPage({ settings, onChange, goHome }) {
+function SettingsPage({ settings, onChange, goHome, recipes, onImport }) {
   const T = useTheme();
   const [imgBusy, setImgBusy] = useState(false);
   const [imgError, setImgError] = useState("");
   const fileRef = useRef(null);
+  const importRef = useRef(null);
+  const [showExport, setShowExport] = useState(false);
+  const [importMsg, setImportMsg] = useState("");
 
   const headerBg = luminance(T.bg) < 0.45 ? mix(T.bg, "#000000", 0.3) : T.ink;
+
+  const handleImportFile = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    setImportMsg("");
+    try {
+      const text = await file.text();
+      let parsed = JSON.parse(text);
+      if (!Array.isArray(parsed)) parsed = [parsed];
+      const res = onImport(parsed);
+      const bits = [];
+      bits.push(res.added + " recipe" + (res.added === 1 ? "" : "s") + " imported");
+      if (res.skipped) bits.push(res.skipped + " skipped (already in your app)");
+      if (res.invalid) bits.push(res.invalid + " entries weren't valid recipes");
+      if (res.unsaved) bits.push(res.unsaved + " couldn't be saved permanently — browser storage may be full");
+      setImportMsg(bits.join(" · ") + ".");
+    } catch (err) {
+      setImportMsg("That file couldn't be read as a recipe list. It should be a .json file exported from this app.");
+    }
+    if (importRef.current) importRef.current.value = "";
+  };
 
   const handleBgImage = async (e) => {
     const file = e.target.files && e.target.files[0];
@@ -942,10 +995,148 @@ function SettingsPage({ settings, onChange, goHome }) {
             </div>
           </div>
         )}
+
+        <h3 style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: T.inkSoft, margin: "34px 0 12px" }}>
+          Backup &amp; sharing
+        </h3>
+        <div style={{ background: T.card, border: "1.5px solid " + T.line, borderRadius: 14, padding: "18px 18px 20px" }}>
+          <p style={{ fontSize: 14, color: T.inkSoft, margin: "0 0 14px", lineHeight: 1.55 }}>
+            Export picks the recipes you choose into a small <code style={{ fontSize: 13 }}>.json</code> file — send it to
+            anyone using this app, or keep it as a backup in case your browser storage is ever cleared.
+            Import reads one of those files and adds its recipes to your app.
+          </p>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button
+              onClick={() => setShowExport(true)}
+              style={{ padding: "11px 22px", borderRadius: 999, border: "none", background: T.accent, color: T.onAccent, fontSize: 14.5, fontWeight: 700, cursor: "pointer" }}
+            >
+              ⇩ Export recipes…
+            </button>
+            <input ref={importRef} type="file" accept=".json,application/json" onChange={handleImportFile} style={{ display: "none" }} />
+            <button
+              onClick={() => importRef.current && importRef.current.click()}
+              style={{ ...smallBtnStyle(T), padding: "11px 22px", fontSize: 14.5 }}
+            >
+              ⇧ Import recipes
+            </button>
+          </div>
+          {importMsg && <p style={{ fontSize: 13.5, marginTop: 12, marginBottom: 0, color: T.ink }}>{importMsg}</p>}
+        </div>
       </main>
+
+      {showExport && <ExportModal recipes={recipes} onClose={() => setShowExport(false)} />}
 
       <BackButton onClick={goHome} />
     </div>
+  );
+}
+
+/* ---------- export modal: pick recipes, download as JSON ---------- */
+function ExportModal({ recipes, onClose }) {
+  const T = useTheme();
+  const [sel, setSel] = useState(() => new Set());
+  const [filter, setFilter] = useState("");
+  const q = filter.trim().toLowerCase();
+  const shown = q ? recipes.filter((r) => r.name.toLowerCase().includes(q)) : recipes;
+
+  const toggle = (id) => {
+    setSel((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const selectShown = () => setSel((prev) => new Set([...prev, ...shown.map((r) => r.id)]));
+  const clearAll = () => setSel(new Set());
+
+  const doExport = () => {
+    const chosen = recipes
+      .filter((r) => sel.has(r.id))
+      .map((r) => ({
+        name: r.name,
+        type: r.type || "",
+        description: r.description || "",
+        ingredients: r.ingredients || [],
+        steps: r.steps || [],
+        image: r.image || null,
+      }));
+    const blob = new Blob([JSON.stringify(chosen, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "my-recipes.json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+    onClose();
+  };
+
+  return (
+    <Overlay onClose={onClose}>
+      <h3 className="display" style={{ margin: "0 0 6px", fontSize: 24 }}>Export recipes</h3>
+      <p style={{ fontSize: 13.5, color: T.inkSoft, margin: "0 0 14px" }}>
+        Tick the recipes to include, then download. The file can be imported by anyone using this app —
+        or its entries pasted into <code style={{ fontSize: 12.5 }}>recipes-db.json</code> to make them built-in.
+      </p>
+
+      <input
+        value={filter}
+        onChange={(e) => setFilter(e.target.value)}
+        placeholder="Filter by name…"
+        aria-label="Filter recipes to export"
+        style={{
+          width: "100%", boxSizing: "border-box", padding: "9px 13px", borderRadius: 999,
+          border: "1.5px solid " + T.line,
+          background: luminance(T.card) < 0.45 ? mix(T.card, "#000000", 0.15) : "#fff",
+          fontSize: 14, color: T.ink, fontFamily: "inherit", marginBottom: 10,
+        }}
+      />
+
+      <div style={{ display: "flex", gap: 8, marginBottom: 10, alignItems: "center", flexWrap: "wrap" }}>
+        <button onClick={selectShown} style={{ ...smallBtnStyle(T), padding: "6px 14px", fontSize: 13 }}>
+          Select {q ? "shown" : "all"}
+        </button>
+        <button onClick={clearAll} style={{ ...smallBtnStyle(T), padding: "6px 14px", fontSize: 13 }}>Clear</button>
+        <span style={{ fontSize: 13, color: T.inkSoft }}>{sel.size} selected</span>
+      </div>
+
+      <div style={{ maxHeight: "42vh", overflowY: "auto", border: "1.5px solid " + T.line, borderRadius: 12 }}>
+        {shown.length === 0 ? (
+          <p style={{ padding: 16, margin: 0, fontSize: 14, color: T.inkSoft }}>No recipes match that filter.</p>
+        ) : (
+          shown.map((r) => (
+            <label
+              key={r.id}
+              style={{
+                display: "flex", alignItems: "center", gap: 10, padding: "10px 14px",
+                borderBottom: "1px solid " + T.line, cursor: "pointer", fontSize: 14.5,
+              }}
+            >
+              <input type="checkbox" checked={sel.has(r.id)} onChange={() => toggle(r.id)} style={{ width: 17, height: 17, accentColor: T.accent, flexShrink: 0 }} />
+              <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</span>
+              <span style={{ fontSize: 12, color: T.inkSoft, flexShrink: 0 }}>
+                {(r.type || "Any") + (r.builtin ? " · Built-in" : "")}
+              </span>
+            </label>
+          ))
+        )}
+      </div>
+
+      <div style={{ display: "flex", gap: 10, marginTop: 18, justifyContent: "flex-end" }}>
+        <button onClick={onClose} style={{ ...smallBtnStyle(T), padding: "11px 22px" }}>Cancel</button>
+        <button
+          onClick={doExport}
+          disabled={sel.size === 0}
+          style={{
+            padding: "11px 24px", borderRadius: 999, border: "none",
+            background: sel.size === 0 ? T.line : T.accent,
+            color: sel.size === 0 ? T.inkSoft : T.onAccent,
+            fontSize: 14.5, fontWeight: 700, cursor: sel.size === 0 ? "not-allowed" : "pointer",
+          }}
+        >
+          Export {sel.size > 0 ? sel.size + " recipe" + (sel.size === 1 ? "" : "s") : ""}
+        </button>
+      </div>
+    </Overlay>
   );
 }
 
