@@ -358,6 +358,7 @@ function RecipeStorage() {
   const [tab, setTab] = useState("Breakfast");
   const [recipes, setRecipes] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [editRecipe, setEditRecipe] = useState(null);
   const [openRecipe, setOpenRecipe] = useState(null);
   const [notice, setNotice] = useState("");
   const [settings, setSettings] = useState({
@@ -438,11 +439,33 @@ function RecipeStorage() {
     if (!saveSettings(next)) flash("Theme applied, but couldn't be saved — browser storage is full.");
   };
 
-  const addRecipe = (recipe) => {
+  const addRecipe = (payload) => {
+    const recipe = { id: uid(), favorite: false, createdAt: Date.now(), ...payload };
     setRecipes((prev) => [recipe, ...prev]);
     setShowForm(false);
     const ok = saveRecipe(recipe);
     flash(ok ? "Saved \u201C" + recipe.name + "\u201D" : "Added, but couldn't be saved — browser storage is full. Try removing the photo.");
+  };
+
+  const applyEdit = (original, payload) => {
+    setEditRecipe(null);
+    if (original.builtin) {
+      // Built-ins live in recipes-db.json, so an edit becomes the user's own
+      // copy and the original built-in is hidden for them.
+      const rec = { id: uid(), favorite: original.favorite, createdAt: Date.now(), ...payload };
+      const meta = loadBuiltinMeta();
+      if (meta.hidden.indexOf(original.id) === -1) meta.hidden.push(original.id);
+      meta.favs = meta.favs.filter((f) => f !== original.id);
+      saveBuiltinMeta(meta);
+      setRecipes((prev) => [rec, ...prev.filter((r) => r.id !== original.id)]);
+      const ok = saveRecipe(rec);
+      flash(ok ? "Saved your edited copy of \u201C" + rec.name + "\u201D" : "Edited, but couldn't be saved — browser storage is full.");
+    } else {
+      const rec = { ...original, ...payload };
+      setRecipes((prev) => prev.map((r) => (r.id === original.id ? rec : r)));
+      const ok = saveRecipe(rec);
+      flash(ok ? "Changes saved" : "Changed, but couldn't be saved — browser storage is full.");
+    }
   };
 
   const toggleFavorite = (id) => {
@@ -541,7 +564,14 @@ function RecipeStorage() {
             <SettingsPage settings={settings} onChange={updateSettings} goHome={() => setView("home")} recipes={recipes} onImport={importRecipes} />
           )}
 
-          {showForm && <RecipeForm onCancel={() => setShowForm(false)} onSave={addRecipe} />}
+          {(showForm || editRecipe) && (
+            <RecipeForm
+              initial={editRecipe}
+              defaultType={showForm && view === "recipes" ? tab : ""}
+              onCancel={() => { setShowForm(false); setEditRecipe(null); }}
+              onSave={(payload) => (editRecipe ? applyEdit(editRecipe, payload) : addRecipe(payload))}
+            />
+          )}
 
           {openRecipe && (
             <RecipeDetail
@@ -549,6 +579,11 @@ function RecipeStorage() {
               onClose={() => setOpenRecipe(null)}
               onStar={() => toggleFavorite(openRecipe.id)}
               onDelete={() => deleteRecipe(openRecipe.id)}
+              onEdit={() => {
+                const current = recipes.find((r) => r.id === openRecipe.id) || openRecipe;
+                setOpenRecipe(null);
+                setEditRecipe(current);
+              }}
             />
           )}
 
@@ -1161,14 +1196,15 @@ function ColorPicker({ label, hint, value, onChange }) {
 }
 
 /* ---------- add-recipe form (Write my own / Search recipes) ---------- */
-function RecipeForm({ onCancel, onSave }) {
+function RecipeForm({ onCancel, onSave, initial, defaultType }) {
   const T = useTheme();
+  const editing = !!initial;
   const [formTab, setFormTab] = useState("create");
-  const [name, setName] = useState("");
-  const [type, setType] = useState("");
-  const [ingredients, setIngredients] = useState("");
-  const [steps, setSteps] = useState("");
-  const [image, setImage] = useState(null);
+  const [name, setName] = useState(initial ? initial.name : "");
+  const [type, setType] = useState(initial ? (initial.type || "") : (defaultType || ""));
+  const [ingredients, setIngredients] = useState(initial ? (initial.ingredients || []).join("\n") : "");
+  const [steps, setSteps] = useState(initial ? (initial.steps || []).join("\n") : "");
+  const [image, setImage] = useState(initial ? (initial.image || null) : null);
   const [imgBusy, setImgBusy] = useState(false);
   const [error, setError] = useState("");
   const [prefillNote, setPrefillNote] = useState("");
@@ -1293,10 +1329,7 @@ function RecipeForm({ onCancel, onSave }) {
     const stp = steps.split("\n").map((s) => s.trim()).filter(Boolean);
     if (ing.length === 0) { setError("Add at least one ingredient (one per line)."); return; }
     if (stp.length === 0) { setError("Add at least one step (one per line)."); return; }
-    onSave({
-      id: uid(), name: name.trim(), type: type || "",
-      ingredients: ing, steps: stp, image, favorite: false, createdAt: Date.now(),
-    });
+    onSave({ name: name.trim(), type: type || "", ingredients: ing, steps: stp, image });
   };
 
   const formTabBtn = (id, label) => {
@@ -1320,13 +1353,15 @@ function RecipeForm({ onCancel, onSave }) {
 
   return (
     <Overlay onClose={onCancel}>
-      <h3 className="display" style={{ margin: "0 0 14px", fontSize: 26 }}>Add a recipe</h3>
+      <h3 className="display" style={{ margin: "0 0 14px", fontSize: 26 }}>{editing ? "Edit recipe" : "Add a recipe"}</h3>
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-        {formTabBtn("create", "✎ Write my own")}
-        {formTabBtn("search", "🔍 Search")}
-        {formTabBtn("scan", "📷 Scan a photo")}
-      </div>
+      {!editing && (
+        <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+          {formTabBtn("create", "✎ Write my own")}
+          {formTabBtn("search", "🔍 Search")}
+          {formTabBtn("scan", "📷 Scan a photo")}
+        </div>
+      )}
 
       {formTab === "scan" ? (
         <div>
@@ -1453,7 +1488,7 @@ function RecipeForm({ onCancel, onSave }) {
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Sunday pancakes" style={inputStyle} />
           </Field>
 
-          <Field label="Type" hint="Optional — pick a meal to file it under a tab. Left blank, it shows in all tabs.">
+          <Field label="Type" hint={!editing && defaultType ? "Auto-filled from the \u201C" + defaultType + "\u201D tab you were on — change it if this belongs elsewhere." : "Optional — pick a meal to file it under a tab. Left blank, it shows in all tabs."}>
             <select value={type} onChange={(e) => setType(e.target.value)} style={inputStyle}>
               <option value="">No type — show everywhere</option>
               {MEALS.map((m) => <option key={m} value={m}>{m}</option>)}
@@ -1508,7 +1543,7 @@ function RecipeForm({ onCancel, onSave }) {
                 background: T.accent, color: T.onAccent, fontSize: 15, fontWeight: 700, cursor: "pointer",
               }}
             >
-              Save recipe
+              {editing ? "Save changes" : "Save recipe"}
             </button>
           </div>
         </div>
@@ -1518,7 +1553,7 @@ function RecipeForm({ onCancel, onSave }) {
 }
 
 /* ---------- recipe detail ---------- */
-function RecipeDetail({ recipe, onClose, onStar, onDelete }) {
+function RecipeDetail({ recipe, onClose, onStar, onDelete, onEdit }) {
   const T = useTheme();
   const [confirming, setConfirming] = useState(false);
 
@@ -1567,9 +1602,12 @@ function RecipeDetail({ recipe, onClose, onStar, onDelete }) {
             <button onClick={() => setConfirming(false)} style={smallBtnStyle(T)}>Keep it</button>
           </div>
         ) : (
-          <button onClick={() => setConfirming(true)} style={{ ...smallBtnStyle(T), color: T.accent, borderColor: T.accent }}>
-            {recipe.builtin ? "Hide recipe" : "Delete recipe"}
-          </button>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button onClick={onEdit} style={smallBtnStyle(T)}>✎ Edit recipe</button>
+            <button onClick={() => setConfirming(true)} style={{ ...smallBtnStyle(T), color: T.accent, borderColor: T.accent }}>
+              {recipe.builtin ? "Hide recipe" : "Delete recipe"}
+            </button>
+          </div>
         )}
         <button onClick={onClose} style={{ ...smallBtnStyle(T), background: T.ink, color: T.bg, borderColor: T.ink, padding: "10px 24px" }}>Close</button>
       </div>
